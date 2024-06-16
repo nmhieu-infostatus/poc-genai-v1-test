@@ -3,6 +3,7 @@
 # chmod u+x create-stack.sh
 # source ./create-stack.sh
 
+#!/bin/bash
 export UNIQUE_IDENTIFIER=$(uuidgen | tr '[:upper:]' '[:lower:]' | tr -d '-' | cut -c 1-5)
 export S3_ARTIFACT_BUCKET_NAME=$STACK_NAME-$UNIQUE_IDENTIFIER
 export DATA_LOADER_S3_KEY="agent/lambda/data-loader/loader_deployment_package.zip"
