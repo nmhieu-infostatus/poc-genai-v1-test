@@ -6,7 +6,6 @@ from urllib.parse import urlparse
 
 bedrock = boto3.client('bedrock-runtime', region_name=os.environ['AWS_REGION'])
 
-
 class Tools:
 
     def __init__(self) -> None:
@@ -118,7 +117,6 @@ class Tools:
         answer = response_body['content'][0]['text']
 
         return answer
-
 
 # Pass the initialized retriever and llm to the Tools class constructor
 tools = Tools().tools

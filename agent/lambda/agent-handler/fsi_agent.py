@@ -16,7 +16,7 @@ class FSIAgent:
 
     def create_agent(self):
         # Initialize the agent with only the AnyCompany tool
-        anycompany_tool = Tool(name="AnyCompany", func=self.tools_instance.kendra_search, description="Use this tool to answer questions about AnyCompany.")
+        anycompany_tool = Tool(name="Enviroflares", func=self.tools_instance.kendra_search, description="Use this tool to answer questions about Enviroflares.")
         
         fsi_agent = ConversationalAgent.from_llm_and_tools(
             llm=self.llm,
@@ -40,7 +40,7 @@ class FSIAgent:
         return agent_executor
 
     def run(self, input):
-        print("Running FSI Agent with input: " + str(input))
+        print("Running GenAI Agent with input: " + str(input))
         try:
             response = self.tools_instance.kendra_search(input)
         except ValueError as e:
