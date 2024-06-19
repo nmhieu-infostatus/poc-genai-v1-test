@@ -20,6 +20,7 @@ class GenAIAgent:
         self.agent = self.create_agent()
 
     def create_agent(self):
+
         # Initialize the agent with only the custom tool class from tools.py
         genai_tool = Tool(name="GenAI", func=self.tools_instance.kendra_search,
                                description="Use this tool to answer questions about your projects.")

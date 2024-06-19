@@ -81,11 +81,11 @@ def elicit_intent(intent_request, session_attributes, message):
                 'imageResponseCard': {
                     "buttons": [
                         {
-                            "text": "Loan Application",
+                            "text": "(to be removed)",
                             "value": "Loan Application"
                         },
                         {
-                            "text": "Loan Calculator",
+                            "text": "(to be removed)",
                             "value": "Loan Calculator"
                         },
                         {
