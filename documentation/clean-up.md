@@ -16,7 +16,7 @@ The following commands use the default stack name. If you customized the stack n
 ```
 
 #### Solution Deletion Automation Script
-The [delete-stack.sh](../shell/delete-stack.sh) shell script deletes the resources that were originally provisioned using the solution deployment automation script, including the [GenAI-FSI-Agent.yml](../cfn/GenAI-FSI-Agent.yml) CloudFormation stack.
+The [delete-stack.sh](../shell/delete-stack.sh) shell script deletes the resources that were originally provisioned using the solution deployment automation script, including the [GenAI-FSI-Agent.yml](../cfn/GenAI-Agent.yml) CloudFormation stack.
 
 ```sh
 echo "Deleting Kendra Data Source: $KENDRA_WEBCRAWLER_DATA_SOURCE_ID"
