@@ -93,11 +93,11 @@ Parameters:
   KnowledgeBucketName:
     Description: S3 Bucket Name for Knowledge Documents.
     Type: String
-    Default: your-knowledge-root-domain
+    Default: your-knowledge-bucket-name
   AmplifyRepository:
     Description: Source repository for AWS Amplify frontend. 
     Type: String
-    Default: your-forked-repo-url
+    Default: your-amplify-repo-url
 
 Resources:
   UserPendingAccountsTable:
@@ -411,8 +411,8 @@ Resources:
             Resource:
             - !Sub arn:aws:s3:::${S3ArtifactBucket}
             - !Sub arn:aws:s3:::${S3ArtifactBucket}/*
-            - !Sub arn:aws:s3:::${KnowledgeBucketName}
-            - !Sub arn:aws:s3:::${KnowledgeBucketName}/*
+            - !Sub arn:aws:s3:::${KnowlegeBucketName}
+            - !Sub arn:aws:s3:::${KnowlegeBucketName}/*
           - Effect: Allow
             Action:
             - 'kendra:PutPrincipalMapping'

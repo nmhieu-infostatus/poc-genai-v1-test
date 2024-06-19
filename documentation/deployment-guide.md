@@ -48,7 +48,7 @@ cfn_nag_scan --input-path cfn/GenAI-FSI-Agent.yml
 ```
 
 ## Deployment 
-The solution deployment automation script allows for automated solution provisioning through a parameterized CloudFormation template, [GenAI-FSI-Agent.yml](../cfn/GenAI-FSI-Agent.yml), which includes the following resources:
+The solution deployment automation script allows for automated solution provisioning through a parameterized CloudFormation template, [GenAI-FSI-Agent.yml](../cfn/GenAI-Agent.yml), which includes the following resources:
 
 - An AWS Amplify website to simulate your front-end environment.
 - An Amazon Lex bot configured through a bot import deployment package.
@@ -64,7 +64,7 @@ The solution deployment automation script allows for automated solution provisio
  - A Lambda layer for Amazon Bedrock Boto3, LangChain, and pdfrw libraries, built from [requirements.txt](../agent/lambda/lambda-layers/requirements.txt). The layer supplies LangChain's FM library with an Amazon Bedrock model as the underlying FM and provides pdfrw as an open source PDF library for creating and modifying PDF files.
  - An Amazon Kendra Index: Provides a searchable index of customer authoritative information, including documents, FAQs, knowledge repositories, manuals, websites, and more.
  - Two Kendra Data Sources:
-	- Amazon S3 - Hosts an [example customer FAQ document](../agent/assets/AnyCompany-FAQs.csv).
+	- Amazon S3 - Hosts an [example customer FAQ document](../agent/assets/GenAI-FAQs.csv).
 	- Amazon Kendra Web Crawler - Configured with a root domain that emulates the customer-specific website (for example, _<your-company>.com_).
  - [AWS Identity and Access Management](https://aws.amazon.com/iam/) (IAM) permissions for the preceding resources.
 
@@ -88,7 +88,7 @@ export KNOWLEDGE_BUCKET_NAME=<YOUR-KNOWLEDGE-BUCKET-NAME> # S3 bucket name for s
 export AWS_REGION=<YOUR-STACK-REGION> # Stack deployment region
 ```
 
-3. Finally, run the shell script to deploy the solution's resource, including the [GenAI-FSI-Agent.yml](../cfn/GenAI-FSI-Agent.yml) CloudFormation stack:
+3. Finally, run the shell script to deploy the solution's resource, including the [GenAI-FSI-Agent.yml](../cfn/GenAI-Agent.yml) CloudFormation stack:
 
 ```sh
 source ./create-stack.sh

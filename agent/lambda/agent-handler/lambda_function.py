@@ -9,7 +9,7 @@ import datetime
 import dateutil.parser
 
 from chat import Chat
-from fsi_agent import FSIAgent
+from genai_agent import GenAIAgent
 from boto3.dynamodb.conditions import Key
 from langchain.llms.bedrock import Bedrock
 
@@ -20,10 +20,12 @@ s3_artifact_bucket = os.environ['S3_ARTIFACT_BUCKET_NAME']
 
 # Instantiate boto3 clients and resources
 boto3_session = boto3.Session(region_name=os.environ['AWS_REGION'])
-dynamodb = boto3.resource('dynamodb',region_name=os.environ['AWS_REGION'])
-s3_client = boto3.client('s3',region_name=os.environ['AWS_REGION'],config=boto3.session.Config(signature_version='s3v4',))
+dynamodb = boto3.resource('dynamodb', region_name=os.environ['AWS_REGION'])
+s3_client = boto3.client('s3', region_name=os.environ['AWS_REGION'],
+                         config=boto3.session.Config(signature_version='s3v4', ))
 s3_object = boto3.resource('s3')
 bedrock_client = boto3_session.client(service_name="bedrock-runtime")
+
 
 # --- Lex v2 request/response helpers (https://docs.aws.amazon.com/lexv2/latest/dg/lambda-response-format.html) ---
 
@@ -33,7 +35,7 @@ def elicit_slot(session_attributes, active_contexts, intent, slot_to_elicit, mes
     """
     response = {
         'sessionState': {
-            'activeContexts':[{
+            'activeContexts': [{
                 'name': 'intentContext',
                 'contextAttributes': active_contexts,
                 'timeToLive': {
@@ -44,7 +46,7 @@ def elicit_slot(session_attributes, active_contexts, intent, slot_to_elicit, mes
             'sessionAttributes': session_attributes,
             'dialogAction': {
                 'type': 'ElicitSlot',
-                'slotToElicit': slot_to_elicit 
+                'slotToElicit': slot_to_elicit
             },
             'intent': intent,
         },
@@ -55,6 +57,7 @@ def elicit_slot(session_attributes, active_contexts, intent, slot_to_elicit, mes
     }
 
     return response
+
 
 def elicit_intent(intent_request, session_attributes, message):
     """
@@ -69,9 +72,10 @@ def elicit_intent(intent_request, session_attributes, message):
         },
         'messages': [
             {
-                'contentType': 'PlainText', 
+                'contentType': 'PlainText',
                 'content': message
             },
+            # TODO: Remove this card or replace with new commands
             {
                 'contentType': 'ImageResponseCard',
                 'imageResponseCard': {
@@ -86,16 +90,17 @@ def elicit_intent(intent_request, session_attributes, message):
                         },
                         {
                             "text": "Ask GenAI",
-                            "value": "What kind of questions can the Assistant answer?"
+                            "value": "What kind of questions can you answer?"
                         }
                     ],
                     "title": "How can I help you?"
                 }
-            }     
+            }
         ]
     }
 
     return response
+
 
 def delegate(session_attributes, active_contexts, intent, message):
     """
@@ -103,7 +108,7 @@ def delegate(session_attributes, active_contexts, intent, message):
     """
     response = {
         'sessionState': {
-            'activeContexts':[{
+            'activeContexts': [{
                 'name': 'intentContext',
                 'contextAttributes': active_contexts,
                 'timeToLive': {
@@ -122,17 +127,19 @@ def delegate(session_attributes, active_contexts, intent, message):
 
     return response
 
+
 def build_slot(intent_request, slot_to_build, slot_value):
     """
     Builds a slot with a specified slot value for the given intent_request.
     """
     intent_request['sessionState']['intent']['slots'][slot_to_build] = {
-        'shape': 'Scalar', 'value': 
-        {
-            'originalValue': slot_value, 'resolvedValues': [slot_value], 
-            'interpretedValue': slot_value
-        }
+        'shape': 'Scalar', 'value':
+            {
+                'originalValue': slot_value, 'resolvedValues': [slot_value],
+                'interpretedValue': slot_value
+            }
     }
+
 
 def build_validation_result(isvalid, violated_slot, message_content):
     """
@@ -143,7 +150,8 @@ def build_validation_result(isvalid, violated_slot, message_content):
         'violatedSlot': violated_slot,
         'message': message_content
     }
-    
+
+
 # --- Utility helper functions ---
 
 def isvalid_date(date):
@@ -151,8 +159,9 @@ def isvalid_date(date):
         dateutil.parser.parse(date, fuzzy=True)
         return True
     except ValueError as e:
-        print("DATE PARSER ERROR: " + str(e)) # TODO
+        print("DATE PARSER ERROR: " + str(e))  # TODO
         return False
+
 
 def isvalid_yes_or_no(word):
     reference_words = ['yes', 'no', 'yep', 'nope']
@@ -164,20 +173,24 @@ def isvalid_yes_or_no(word):
     # Check if the word is close to 'yes' or 'no' based on similarity threshold
     return any(score >= similarity_threshold for score in similarity_scores)
 
+
 def isvalid_credit_score(credit_score):
     if int(credit_score) < 851 and int(credit_score) > 300:
         return True
     return False
+
 
 def isvalid_zero_or_greater(value):
     if int(value) >= 0:
         return True
     return False
 
+
 def safe_int(n):
     if n is not None:
         return int(n)
     return n
+
 
 def create_presigned_url(bucket_name, object_name, expiration=600):
     """
@@ -196,6 +209,7 @@ def create_presigned_url(bucket_name, object_name, expiration=600):
     # The response contains the presigned URL
     return response
 
+
 def try_ex(value):
     """
     Safely access slots dictionary values.
@@ -210,7 +224,8 @@ def try_ex(value):
     else:
         return None
 
-# --- Intent fulfillment functions --- 
+
+# --- Intent fulfillment functions ---
 
 def isvalid_pin(userName, pin):
     """
@@ -243,6 +258,7 @@ def isvalid_pin(userName, pin):
         print(e)
         return e
 
+
 def isvalid_username(userName):
     """
     Validates the user-provided username exists in the 'user_accounts_table_name' DynamoDB table.
@@ -270,6 +286,7 @@ def isvalid_username(userName):
         print(e)
         return e
 
+
 def validate_pin(intent_request, slots):
     """
     Elicits and validates user input values for username and PIN. Invoked as part of 'verify_identity' intent fulfillment.
@@ -282,7 +299,8 @@ def validate_pin(intent_request, slots):
             return build_validation_result(
                 False,
                 'UserName',
-                'Our records indicate there is no profile belonging to the username, {}. Please enter a valid username'.format(username)
+                'Our records indicate there is no profile belonging to the username, {}. Please enter a valid username'.format(
+                    username)
             )
         session_attributes = intent_request['sessionState'].get("sessionAttributes") or {}
         session_attributes['UserName'] = username
@@ -292,25 +310,25 @@ def validate_pin(intent_request, slots):
         return build_validation_result(
             False,
             'UserName',
-            'Our records indicate there are no accounts belonging to that username. Please try again.'
+            'Please enter your username and try again.'
         )
 
     if pin is not None:
-        if  not isvalid_pin(username, pin):
+        if not isvalid_pin(username, pin):
             return build_validation_result(
                 False,
                 'Pin',
-                'You have entered an incorrect PIN. Please try again.'.format(pin)
+                'You have entered an incorrect PIN. Please try again.'
             )
     else:
-        message = "Thank you for choosing AnyCompany, {}. Please confirm your 4-digit PIN before we proceed.".format(username)
         return build_validation_result(
             False,
             'Pin',
-            message
+            'Thank you, {}. Please confirm your 4-digit PIN before we proceed.'.format(username)
         )
 
     return {'isValid': True}
+
 
 def verify_identity(intent_request):
     """
@@ -318,7 +336,7 @@ def verify_identity(intent_request):
     """
     slots = intent_request['sessionState']['intent']['slots']
     pin = try_ex(slots['Pin'])
-    username=try_ex(slots['UserName'])
+    username = try_ex(slots['UserName'])
 
     confirmation_status = intent_request['sessionState']['intent']['confirmationState']
     session_attributes = intent_request['sessionState'].get("sessionAttributes") or {}
@@ -351,363 +369,395 @@ def verify_identity(intent_request):
                     KeyConditionExpression=Key('userName').eq(username)
                 )
 
-                # TODO: Customize account readout based on account type
+                # TODO: Customize responses based on user's data
                 message = ""
                 items = response['Items']
                 for item in items:
-                    if item['planName'] == 'mortgage' or item['planName'] == 'Mortgage':
-                        message = "Your mortgage account summary includes a ${:,} loan at {}% interest with ${:,} of unpaid principal. Your next payment of ${:,} is scheduled for {}.".format(item['loanAmount'], item['loanInterest'], item['unpaidPrincipal'], item['amountDue'], item['dueDate'])
-                    elif item['planName'] == 'Checking' or item['planName'] == 'checking':
-                        message = "I see you have a Savings account with AnyCompany. Your account balance is ${:,} and your next payment \
-                            amount of ${:,} is scheduled for {}.".format(item['unpaidPrincipal'], item['paymentAmount'], item['dueDate'])
-                    elif item['planName'] == 'Loan' or item['planName'] == 'loan':
-                            message = "I see you have a Loan account with AnyCompany. Your account balance is ${:,} and your next payment \
-                            amount of ${:,} is scheduled for {}.".format(item['unpaidPrincipal'], item['paymentAmount'], item['dueDate'])
-                return elicit_intent(intent_request, session_attributes, 
-                    'Thank you for confirming your username and PIN, {}. {}'.format(username, message)
-                    )
+                    for item_key, item_value in item.items():
+                        message += "{}: {}\n".format(item_key, item_value)
+                    # if item['planName'] == 'mortgage' or item['planName'] == 'Mortgage':
+                    #     message = "Your mortgage account summary includes a ${:,} loan at {}% interest with ${:,} of unpaid principal. Your next payment of ${:,} is scheduled for {}.".format(
+                    #         item['loanAmount'], item['loanInterest'], item['unpaidPrincipal'], item['amountDue'],
+                    #         item['dueDate'])
+                    # elif item['planName'] == 'Checking' or item['planName'] == 'checking':
+                    #     message = "I see you have a Savings account with AnyCompany. Your account balance is ${:,} and your next payment \
+                    #         amount of ${:,} is scheduled for {}.".format(item['unpaidPrincipal'], item['paymentAmount'],
+                    #                                                      item['dueDate'])
+                    # elif item['planName'] == 'Loan' or item['planName'] == 'loan':
+                    #     message = "I see you have a Loan account with AnyCompany. Your account balance is ${:,} and your next payment \
+                    #         amount of ${:,} is scheduled for {}.".format(item['unpaidPrincipal'], item['paymentAmount'],
+                    #                                                      item['dueDate'])
+                return elicit_intent(intent_request, session_attributes,
+                                     'Thank you for confirming your username and PIN, {}. '
+                                     'I know this about you: {}'.format(username, message)
+                                     )
 
             except Exception as e:
                 print(e)
                 return e
 
-def validate_loan_application(intent_request, slots):
-    """
-    Elicits and validates slot values provided by the user. Invoked as part of 'loan_application' intent fulfillment.
-    """
-    username = try_ex(slots['UserName'])
-    loan_value = try_ex(slots['LoanValue'])
-    monthly_income = try_ex(slots['MonthlyIncome'])
-    work_history = try_ex(slots['WorkHistory'])
-    credit_score = try_ex(slots['CreditScore'])
-    housing_expense = try_ex(slots['HousingExpense'])
-    debt_amount = try_ex(slots['DebtAmount'])
-    down_payment = try_ex(slots['DownPayment'])
-    coborrow = try_ex(slots['Coborrow'])
-    closing_date = try_ex(slots['ClosingDate'])
+# temporarily removed loan-related functions for later use/customiation
+# def validate_loan_application(intent_request, slots):
+#     """
+#     Elicits and validates slot values provided by the user. Invoked as part of 'loan_application' intent fulfillment.
+#     """
+#     username = try_ex(slots['UserName'])
+#     loan_value = try_ex(slots['LoanValue'])
+#     monthly_income = try_ex(slots['MonthlyIncome'])
+#     work_history = try_ex(slots['WorkHistory'])
+#     credit_score = try_ex(slots['CreditScore'])
+#     housing_expense = try_ex(slots['HousingExpense'])
+#     debt_amount = try_ex(slots['DebtAmount'])
+#     down_payment = try_ex(slots['DownPayment'])
+#     coborrow = try_ex(slots['Coborrow'])
+#     closing_date = try_ex(slots['ClosingDate'])
+#
+#     confirmation_status = intent_request['sessionState']['intent']['confirmationState']
+#     session_attributes = intent_request['sessionState'].get("sessionAttributes") or {}
+#     active_contexts = {}
+#
+#     if username is not None:
+#         if not isvalid_username(username):
+#             return build_validation_result(
+#                 False,
+#                 'UserName',
+#                 'Our records indicate there is no profile belonging to the username, {}. Please enter a valid username'.format(
+#                     username)
+#             )
+#     else:
+#         try:
+#             session_username = intent_request['sessionState']['sessionAttributes']['UserName']
+#             build_slot(intent_request, 'UserName', session_username)
+#         except KeyError:
+#             return build_validation_result(
+#                 False,
+#                 'UserName',
+#                 'We cannot find an account under that username. Please try again with a valid username.'
+#             )
+#
+#     if loan_value is not None:
+#         if loan_value.isnumeric():
+#             if not isvalid_zero_or_greater(loan_value):
+#                 return build_validation_result(False, 'LoanValue', 'Please enter a value greater than $0.')
+#         else:
+#             prompt = "The user was just asked to provide their loan value on a loan application and this was their response: " + \
+#                      intent_request['inputTranscript']
+#             message = invoke_agent(prompt)
+#             reply = message + " \n\nWhat is your desired loan amount?"
+#
+#             return build_validation_result(False, 'LoanValue', reply)
+#     else:
+#         return build_validation_result(
+#             False,
+#             'LoanValue',
+#             "What is your desired loan amount? In other words, how much are looking to borrow?"
+#         )
+#
+#     if monthly_income is not None:
+#         if monthly_income.isnumeric():
+#             if not isvalid_zero_or_greater(monthly_income):
+#                 return build_validation_result(False, 'MonthlyIncome',
+#                                                'Monthly income amount must be greater than $0. Please try again.')
+#         else:
+#             prompt = "The user was just asked to provide their monthly income on a loan application and this was their response: " + \
+#                      intent_request['inputTranscript']
+#             message = invoke_agent(prompt)
+#             reply = message + " \n\nWhat is your monthly income?"
+#
+#             return build_validation_result(False, 'MonthlyIncome', reply)
+#     else:
+#         return build_validation_result(
+#             False,
+#             'MonthlyIncome',
+#             "What is your monthly income?"
+#         )
+#
+#     if work_history is not None:
+#         if not isvalid_yes_or_no(work_history):
+#             prompt = "The user was just asked to confirm their continuous two year work history on a loan application and this was their response: " + \
+#                      intent_request['inputTranscript']
+#             message = invoke_agent(prompt)
+#             reply = message + " \n\nDo you have a two-year continuous work history?"
+#
+#             return build_validation_result(False, 'WorkHistory', reply)
+#     else:
+#         return build_validation_result(
+#             False,
+#             'WorkHistory',
+#             "Do you have a two-year continuous work history?"
+#         )
+#
+#     if credit_score is not None:
+#         if credit_score.isnumeric():
+#             if not isvalid_credit_score(credit_score):
+#                 return build_validation_result(False, 'CreditScore',
+#                                                'Credit score entries must be between 300 and 850. Please enter a valid credit score.')
+#         else:
+#             prompt = "The user was just asked to provide their credit score on a loan application and this was their response: " + \
+#                      intent_request['inputTranscript']
+#             message = invoke_agent(prompt)
+#             reply = message + " \n\nWhat do you think your current credit score is?"
+#
+#             return build_validation_result(False, 'CreditScore', reply)
+#     else:
+#         return build_validation_result(
+#             False,
+#             'CreditScore',
+#             "What do you think your current credit score is?"
+#         )
+#
+#     if housing_expense is not None:
+#         if housing_expense.isnumeric():
+#             if not isvalid_zero_or_greater(housing_expense):
+#                 return build_validation_result(False, 'HousingExpense',
+#                                                'Your housing expense must be a value greater than or equal to $0. Please try again.')
+#         else:
+#             prompt = "The user was just asked to provide their monthly housing expense on a loan application and this was their response: " + \
+#                      intent_request['inputTranscript']
+#             message = invoke_agent(prompt)
+#             reply = message + " \n\nHow much are you currently paying for housing each month?"
+#
+#             return build_validation_result(False, 'HousingExpense', reply)
+#     else:
+#         return build_validation_result(
+#             False,
+#             'HousingExpense',
+#             "How much are you currently paying for housing each month?"
+#         )
+#
+#     if debt_amount is not None:
+#         if debt_amount.isnumeric():
+#             if not isvalid_zero_or_greater(debt_amount):
+#                 return build_validation_result(False, 'DebtAmount',
+#                                                'Your debt amount must be a value greater than or equal to $0. Please try again.')
+#         else:
+#             prompt = "The user was just asked to provide their monthly debt amount on a loan application and this was their response: " + \
+#                      intent_request['inputTranscript']
+#             message = invoke_agent(prompt)
+#             reply = message + " \n\nWhat is your estimated credit card or student loan debt?"
+#
+#             return build_validation_result(False, 'DebtAmount', reply)
+#     else:
+#         return build_validation_result(
+#             False,
+#             'DebtAmount',
+#             "What is your estimated credit card or student loan debt?"
+#         )
+#
+#     if down_payment is not None:
+#         if down_payment.isnumeric():
+#             if not isvalid_zero_or_greater(down_payment):
+#                 return build_validation_result(False, 'DownPayment',
+#                                                'Your estimate down payment must be a value greater than or equal to $0. Please try again.')
+#         else:
+#             prompt = "The user was just asked to provide their estimated down payment on a loan application and this was their response: " + \
+#                      intent_request['inputTranscript']
+#             message = invoke_agent(prompt)
+#             reply = message + " \n\nWhat do you have saved for a down payment?"
+#
+#             return build_validation_result(False, 'DownPayment', reply)
+#     else:
+#         return build_validation_result(
+#             False,
+#             'DownPayment',
+#             "What do you have saved for a down payment?"
+#         )
+#
+#     if coborrow is not None:
+#         if not isvalid_yes_or_no(coborrow):
+#             prompt = "The user was just asked to confirm if they will have a co-borrow on a loan application and this was their response: " + \
+#                      intent_request['inputTranscript']
+#             message = invoke_agent(prompt)
+#             reply = message + " \n\nDo you have a co-borrower?"
+#
+#             return build_validation_result(False, 'Coborrow', reply)
+#     else:
+#         return build_validation_result(
+#             False,
+#             'Coborrow',
+#             "Do you have a co-borrower?"
+#         )
+#
+#     if closing_date is not None:
+#         if not isvalid_date(closing_date):
+#             prompt = "The user was just asked to provide their real estate closing date on a loan application and this was their response: " + \
+#                      intent_request['inputTranscript']
+#             message = invoke_agent(prompt)
+#             reply = message + " \n\nWhen are you looking to close?"
+#
+#             return build_validation_result(False, 'ClosingDate', reply)
+#     else:
+#         return build_validation_result(
+#             False,
+#             'ClosingDate',
+#             'When are you looking to close?'
+#         )
+#
+#     return {'isValid': True}
+#
+#
+# def loan_application(intent_request):
+#     """
+#     Performs dialog management and fulfillment for completing a mortgage loan application.
+#
+#     Beyond fulfillment, the implementation for this intent demonstrates the following:
+#     1) Use of elicitSlot in slot validation and re-prompting
+#     2) Use of sessionAttributes to pass information that can be used to guide conversation
+#     """
+#     slots = intent_request['sessionState']['intent']['slots']
+#
+#     username = try_ex(slots['UserName'])
+#     loan_value = try_ex(slots['LoanValue'])
+#     monthly_income = try_ex(slots['MonthlyIncome'])
+#     work_history = try_ex(slots['WorkHistory'])
+#     credit_score = try_ex(slots['CreditScore'])
+#     housing_expense = try_ex(slots['HousingExpense'])
+#     debt_amount = try_ex(slots['DebtAmount'])
+#     down_payment = try_ex(slots['DownPayment'])
+#     coborrow = try_ex(slots['Coborrow'])
+#     closing_date = try_ex(slots['ClosingDate'])
+#
+#     confirmation_status = intent_request['sessionState']['intent']['confirmationState']
+#     session_attributes = intent_request['sessionState'].get("sessionAttributes") or {}
+#     intent = intent_request['sessionState']['intent']
+#     active_contexts = {}
+#
+#     if intent_request['invocationSource'] == 'DialogCodeHook':
+#
+#         # Validate any slots which have been specified. If any are invalid, re-elicit for their value
+#         validation_result = validate_loan_application(intent_request, intent_request['sessionState']['intent']['slots'])
+#
+#         if 'isValid' in validation_result:
+#             if validation_result['isValid'] == False:
+#                 if validation_result['violatedSlot'] == 'CreditScore' and confirmation_status == 'Denied':
+#                     print("Invalid credit score")
+#                     validation_result['violatedSlot'] = 'UserName'
+#                     intent['slots'] = {}
+#
+#                 slots[validation_result['violatedSlot']] = None
+#
+#                 return elicit_slot(
+#                     session_attributes,
+#                     active_contexts,
+#                     intent,
+#                     validation_result['violatedSlot'],
+#                     validation_result['message']
+#                 )
+#
+#     if username and monthly_income:
+#         application = {
+#             'LoanValue': loan_value,
+#             'MonthlyIncome': monthly_income,
+#             'CreditScore': credit_score,
+#             'DownPayment': down_payment
+#         }
+#
+#         # Convert the JSON document to a string
+#         application_string = json.dumps(application)
+#
+#         # Write the JSON document to DynamoDB
+#         loan_application_table = dynamodb.Table(loan_application_table_name)
+#
+#         response = loan_application_table.put_item(
+#             Item={
+#                 'userName': username,
+#                 'planName': 'Loan',
+#                 'document': application_string
+#             }
+#         )
+#
+#         # Determine if the intent and current slot settings have been denied
+#         if confirmation_status == 'Denied' or confirmation_status == 'None':
+#             return delegate(session_attributes, active_contexts, intent, 'How else can I help you?')
+#
+#         if confirmation_status == 'Confirmed':
+#             intent['confirmationState'] = "Confirmed"
+#             intent['state'] = "Fulfilled"
+#
+#         s3_client.download_file(s3_artifact_bucket, 'agent/assets/Mortgage-Loan-Application.pdf',
+#                                 '/tmp/Mortgage-Loan-Application.pdf')
+#
+#         reader = pdfrw.PdfReader('/tmp/Mortgage-Loan-Application.pdf')
+#         acroform = reader.Root.AcroForm
+#
+#         fields_to_update = {
+#             'name': username,
+#             'monthlyNet9': monthly_income,
+#             'creditScore3': credit_score,
+#             'requestedLoan4': loan_value,
+#             'downPayment12': down_payment
+#         }
+#
+#         # Get the fields from the PDF
+#         fields = reader.Root.AcroForm.Fields
+#
+#         # Loop through the fields
+#         for field in fields:
+#             field_name = field.T if hasattr(field, 'T') else ''
+#             field_value = field.V if hasattr(field, 'V') else ''
+#
+#         if acroform is not None and '/Fields' in acroform:
+#             fields = acroform['/Fields']
+#             for field in fields:
+#                 field_name = field['/T'][1:-1]  # Extract field name without '/'
+#                 if field_name in fields_to_update:
+#                     field.update(pdfrw.PdfDict(V=fields_to_update[field_name]))
+#
+#         writer = pdfrw.PdfWriter()
+#         writer.addpage(reader.pages[0])  # Assuming you are updating the first page
+#
+#         with open('/tmp/Mortgage-Loan-Application-Completed.pdf', 'wb') as output_stream:
+#             writer.write(output_stream)
+#
+#         s3_client.upload_file('/tmp/Mortgage-Loan-Application-Completed.pdf', s3_artifact_bucket,
+#                               'agent/assets/Mortgage-Loan-Application-Completed.pdf')
+#
+#         # Create loan application doc in S3
+#         URLs = []
+#         URLs.append(
+#             create_presigned_url(s3_artifact_bucket, 'agent/assets/Mortgage-Loan-Application-Completed.pdf', 3600))
+#         mortgage_app = 'Your loan application is nearly complete! Please follow the link for the last few bits of information: ' + \
+#                        URLs[0]
+#
+#         print("Loan Application Submitted Successfully")
+#
+#         return elicit_intent(
+#             intent_request,
+#             session_attributes,
+#             mortgage_app
+#         )
+#
+#
+# def loan_calculator(intent_request):
+#     """
+#     Performs dialog management and fulfillment for calculating loan details.
+#     This is an empty function framework intended for the user to develope their own intent fulfillment functions.
+#     """
+#     session_attributes = intent_request['sessionState'].get("sessionAttributes") or {}
+#
+#     # def elicit_intent(intent_request, session_attributes, message)
+#     return elicit_intent(
+#         intent_request,
+#         session_attributes,
+#         'This is where you would implement LoanCalculator intent fulfillment.'
+#     )
 
-    confirmation_status = intent_request['sessionState']['intent']['confirmationState']
-    session_attributes = intent_request['sessionState'].get("sessionAttributes") or {}
-    active_contexts = {}
-
-    if username is not None:
-        if not isvalid_username(username):
-            return build_validation_result(
-                False,
-                'UserName',
-                'Our records indicate there is no profile belonging to the username, {}. Please enter a valid username'.format(username)
-            )
-    else:
-        try:
-            session_username = intent_request['sessionState']['sessionAttributes']['UserName']
-            build_slot(intent_request, 'UserName', session_username)
-        except KeyError:
-            return build_validation_result(
-                False,
-                'UserName',
-                'We cannot find an account under that username. Please try again with a valid username.'
-            )
-
-    if loan_value is not None:
-        if loan_value.isnumeric():
-            if not isvalid_zero_or_greater(loan_value):
-                return build_validation_result(False, 'LoanValue', 'Please enter a value greater than $0.')
-        else:
-            prompt = "The user was just asked to provide their loan value on a loan application and this was their response: " + intent_request['inputTranscript']
-            message = invoke_agent(prompt)
-            reply = message + " \n\nWhat is your desired loan amount?"
-
-            return build_validation_result(False, 'LoanValue', reply)
-    else:
-        return build_validation_result(
-            False,
-            'LoanValue',
-            "What is your desired loan amount? In other words, how much are looking to borrow?"
-        )
-
-    if monthly_income is not None:
-        if monthly_income.isnumeric():
-            if not isvalid_zero_or_greater(monthly_income):
-                return build_validation_result(False, 'MonthlyIncome', 'Monthly income amount must be greater than $0. Please try again.')
-        else:
-            prompt = "The user was just asked to provide their monthly income on a loan application and this was their response: " + intent_request['inputTranscript']
-            message = invoke_agent(prompt)
-            reply = message + " \n\nWhat is your monthly income?"
-
-            return build_validation_result(False, 'MonthlyIncome', reply)
-    else:
-        return build_validation_result(
-            False,
-            'MonthlyIncome',
-            "What is your monthly income?"
-        )
-
-    if work_history is not None:
-        if not isvalid_yes_or_no(work_history):
-            prompt = "The user was just asked to confirm their continuous two year work history on a loan application and this was their response: " + intent_request['inputTranscript']
-            message = invoke_agent(prompt)
-            reply = message + " \n\nDo you have a two-year continuous work history?"
-
-            return build_validation_result(False, 'WorkHistory', reply)
-    else:
-        return build_validation_result(
-            False,
-            'WorkHistory',
-            "Do you have a two-year continuous work history?"
-        )
-
-    if credit_score is not None:
-        if credit_score.isnumeric():
-            if not isvalid_credit_score(credit_score):
-                return build_validation_result(False, 'CreditScore', 'Credit score entries must be between 300 and 850. Please enter a valid credit score.')
-        else:
-            prompt = "The user was just asked to provide their credit score on a loan application and this was their response: " + intent_request['inputTranscript']
-            message = invoke_agent(prompt)
-            reply = message + " \n\nWhat do you think your current credit score is?"
-
-            return build_validation_result(False, 'CreditScore', reply)
-    else:
-        return build_validation_result(
-            False,
-            'CreditScore',
-            "What do you think your current credit score is?"
-        )
-
-    if housing_expense is not None:
-        if housing_expense.isnumeric():
-            if not isvalid_zero_or_greater(housing_expense):
-                return build_validation_result(False, 'HousingExpense', 'Your housing expense must be a value greater than or equal to $0. Please try again.')
-        else:
-            prompt = "The user was just asked to provide their monthly housing expense on a loan application and this was their response: " + intent_request['inputTranscript']
-            message = invoke_agent(prompt)
-            reply = message + " \n\nHow much are you currently paying for housing each month?"
-
-            return build_validation_result(False, 'HousingExpense', reply)
-    else:
-        return build_validation_result(
-            False,
-            'HousingExpense',
-            "How much are you currently paying for housing each month?"
-        )
-
-    if debt_amount is not None:
-        if debt_amount.isnumeric():
-            if not isvalid_zero_or_greater(debt_amount):
-                return build_validation_result(False, 'DebtAmount', 'Your debt amount must be a value greater than or equal to $0. Please try again.')
-        else:
-            prompt = "The user was just asked to provide their monthly debt amount on a loan application and this was their response: " + intent_request['inputTranscript']
-            message = invoke_agent(prompt)
-            reply = message + " \n\nWhat is your estimated credit card or student loan debt?"
-
-            return build_validation_result(False, 'DebtAmount', reply)
-    else:
-        return build_validation_result(
-            False,
-            'DebtAmount',
-            "What is your estimated credit card or student loan debt?"
-        )
-
-    if down_payment is not None:
-        if down_payment.isnumeric():
-            if not isvalid_zero_or_greater(down_payment):
-                return build_validation_result(False, 'DownPayment', 'Your estimate down payment must be a value greater than or equal to $0. Please try again.')
-        else:
-            prompt = "The user was just asked to provide their estimated down payment on a loan application and this was their response: " + intent_request['inputTranscript']
-            message = invoke_agent(prompt)
-            reply = message + " \n\nWhat do you have saved for a down payment?"
-
-            return build_validation_result(False, 'DownPayment', reply)
-    else:
-        return build_validation_result(
-            False,
-            'DownPayment',
-            "What do you have saved for a down payment?"
-        )
-
-    if coborrow is not None:
-        if not isvalid_yes_or_no(coborrow):
-            prompt = "The user was just asked to confirm if they will have a co-borrow on a loan application and this was their response: " + intent_request['inputTranscript']
-            message = invoke_agent(prompt)
-            reply = message + " \n\nDo you have a co-borrower?"
-
-            return build_validation_result(False, 'Coborrow', reply)
-    else:
-        return build_validation_result(
-            False,
-            'Coborrow',
-            "Do you have a co-borrower?"
-        )
-
-    if closing_date is not None:
-        if not isvalid_date(closing_date):
-            prompt = "The user was just asked to provide their real estate closing date on a loan application and this was their response: " + intent_request['inputTranscript']
-            message = invoke_agent(prompt)
-            reply = message + " \n\nWhen are you looking to close?"
-
-            return build_validation_result(False, 'ClosingDate', reply)  
-    else:
-        return build_validation_result(
-            False,
-            'ClosingDate',
-            'When are you looking to close?'
-        )
-
-    return {'isValid': True}
-
-def loan_application(intent_request):
-    """
-    Performs dialog management and fulfillment for completing a mortgage loan application.
-
-    Beyond fulfillment, the implementation for this intent demonstrates the following:
-    1) Use of elicitSlot in slot validation and re-prompting
-    2) Use of sessionAttributes to pass information that can be used to guide conversation
-    """
-    slots = intent_request['sessionState']['intent']['slots']
-
-    username = try_ex(slots['UserName'])
-    loan_value = try_ex(slots['LoanValue'])
-    monthly_income = try_ex(slots['MonthlyIncome'])
-    work_history = try_ex(slots['WorkHistory'])
-    credit_score = try_ex(slots['CreditScore'])
-    housing_expense = try_ex(slots['HousingExpense'])
-    debt_amount = try_ex(slots['DebtAmount'])
-    down_payment = try_ex(slots['DownPayment'])
-    coborrow = try_ex(slots['Coborrow'])
-    closing_date = try_ex(slots['ClosingDate'])
-
-    confirmation_status = intent_request['sessionState']['intent']['confirmationState']
-    session_attributes = intent_request['sessionState'].get("sessionAttributes") or {}
-    intent = intent_request['sessionState']['intent']
-    active_contexts = {}
-    
-    if intent_request['invocationSource'] == 'DialogCodeHook':
-
-        # Validate any slots which have been specified. If any are invalid, re-elicit for their value
-        validation_result = validate_loan_application(intent_request, intent_request['sessionState']['intent']['slots'])
-
-        if 'isValid' in validation_result:
-            if validation_result['isValid'] == False:   
-                if validation_result['violatedSlot'] == 'CreditScore' and confirmation_status == 'Denied':
-                    print("Invalid credit score")
-                    validation_result['violatedSlot'] = 'UserName'
-                    intent['slots'] = {}
-
-                slots[validation_result['violatedSlot']] = None
-                
-                return elicit_slot(
-                    session_attributes,
-                    active_contexts,
-                    intent,
-                    validation_result['violatedSlot'],
-                    validation_result['message']
-                )  
-
-    if username and monthly_income:
-        application = {
-            'LoanValue': loan_value,
-            'MonthlyIncome': monthly_income,
-            'CreditScore': credit_score,
-            'DownPayment': down_payment
-        }
-
-        # Convert the JSON document to a string
-        application_string = json.dumps(application)
-
-        # Write the JSON document to DynamoDB
-        loan_application_table = dynamodb.Table(loan_application_table_name)
-
-        response = loan_application_table.put_item(
-            Item={
-                'userName': username,
-                'planName': 'Loan',
-                'document': application_string
-            }
-        )
-
-        # Determine if the intent and current slot settings have been denied
-        if confirmation_status == 'Denied' or confirmation_status == 'None':
-            return delegate(session_attributes, active_contexts, intent, 'How else can I help you?')
-
-        if confirmation_status == 'Confirmed':
-            intent['confirmationState']="Confirmed"
-            intent['state']="Fulfilled"
-
-        s3_client.download_file(s3_artifact_bucket, 'agent/assets/Mortgage-Loan-Application.pdf', '/tmp/Mortgage-Loan-Application.pdf')
-
-        reader = pdfrw.PdfReader('/tmp/Mortgage-Loan-Application.pdf')
-        acroform = reader.Root.AcroForm
-
-        fields_to_update = {
-            'name': username,
-            'monthlyNet9': monthly_income,
-            'creditScore3': credit_score,
-            'requestedLoan4': loan_value,
-            'downPayment12': down_payment
-        }
-
-        # Get the fields from the PDF
-        fields = reader.Root.AcroForm.Fields
-
-        # Loop through the fields
-        for field in fields:
-            field_name = field.T if hasattr(field, 'T') else ''
-            field_value = field.V if hasattr(field, 'V') else ''
-
-        if acroform is not None and '/Fields' in acroform:
-            fields = acroform['/Fields']
-            for field in fields:
-                field_name = field['/T'][1:-1]  # Extract field name without '/'
-                if field_name in fields_to_update:
-                    field.update(pdfrw.PdfDict(V=fields_to_update[field_name]))
-
-        writer = pdfrw.PdfWriter()
-        writer.addpage(reader.pages[0])  # Assuming you are updating the first page
-
-        with open('/tmp/Mortgage-Loan-Application-Completed.pdf', 'wb') as output_stream:
-            writer.write(output_stream)
-            
-        s3_client.upload_file('/tmp/Mortgage-Loan-Application-Completed.pdf', s3_artifact_bucket, 'agent/assets/Mortgage-Loan-Application-Completed.pdf')
-
-        # Create loan application doc in S3
-        URLs=[]
-        URLs.append(create_presigned_url(s3_artifact_bucket,'agent/assets/Mortgage-Loan-Application-Completed.pdf',3600))
-        mortgage_app = 'Your loan application is nearly complete! Please follow the link for the last few bits of information: ' + URLs[0]
-
-        print("Loan Application Submitted Successfully")
-
-        return elicit_intent(
-            intent_request,
-            session_attributes,
-            mortgage_app
-        )
-
-def loan_calculator(intent_request):
-    """
-    Performs dialog management and fulfillment for calculating loan details.
-    This is an empty function framework intended for the user to develope their own intent fulfillment functions.
-    """
-    session_attributes = intent_request['sessionState'].get("sessionAttributes") or {}
-
-    # def elicit_intent(intent_request, session_attributes, message)
-    return elicit_intent(
-        intent_request,
-        session_attributes,
-        'This is where you would implement LoanCalculator intent fulfillment.'
-    )
 
 def invoke_agent(prompt):
     """
     Invokes Amazon Bedrock-powered LangChain agent with 'prompt' input.
     """
-    chat = Chat(prompt)
-    llm = Bedrock(client=bedrock_client, model_id="anthropic.claude-3-haiku-20240307-v1:0", region_name=os.environ['AWS_REGION']) # anthropic.claude-instant-v1 / anthropic.claude-3-sonnet-20240229-v1:0
+    chat = Chat(prompt) # not necessary input prompt
+    llm = Bedrock(client=bedrock_client, model_id="anthropic.claude-3-haiku-20240307-v1:0", region_name=os.environ[
+        'AWS_REGION'])  # anthropic.claude-instant-v1 / anthropic.claude-3-sonnet-20240229-v1:0
     llm.model_kwargs = {'max_tokens_to_sample': 350}
-    lex_agent = FSIAgent(llm, chat.memory)
-    
+    lex_agent = GenAIAgent(llm, chat.memory)
+
     # formatted_prompt = "\n\nHuman: " + prompt + " \n\nAssistant:"
     message = lex_agent.run(input=prompt)
 
     return message
+
 
 def genai_intent(intent_request):
     """
@@ -715,13 +765,14 @@ def genai_intent(intent_request):
     Sends user utterance to the 'invoke_agent' method call.
     """
     session_attributes = intent_request['sessionState'].get("sessionAttributes") or {}
-    
+
     if intent_request['invocationSource'] == 'DialogCodeHook':
-        prompt = intent_request['inputTranscript']
+        prompt = intent_request['inputTranscript'] # get user question (original prompt) here
         output = invoke_agent(prompt)
-        print("FSI Agent response: " + str(output))
+        print("GenAI Agent response: " + str(output))
 
     return elicit_intent(intent_request, session_attributes, output)
+
 
 # --- Intents ---
 
@@ -735,15 +786,17 @@ def dispatch(intent_request):
 
     if intent_name == 'VerifyIdentity':
         return verify_identity(intent_request)
-    elif intent_name == 'LoanApplication':
-        return loan_application(intent_request)
-    elif intent_name == 'LoanCalculator':
-        return loan_calculator(intent_request)
+    # temporarily removed loan-related intents for later use/customisation
+    # elif intent_name == 'LoanApplication':
+    #     return loan_application(intent_request)
+    # elif intent_name == 'LoanCalculator':
+    #     return loan_calculator(intent_request)
     else:
         return genai_intent(intent_request)
 
     raise Exception('Intent with name ' + intent_name + ' not supported')
-        
+
+
 # --- Main handler ---
 
 def handler(event, context):
@@ -751,7 +804,7 @@ def handler(event, context):
     Invoked when the user provides an utterance that maps to a Lex bot intent.
     The JSON body of the user request is provided in the event slot.
     """
-    os.environ['TZ'] = 'America/New_York'
+    os.environ['TZ'] = 'Australia/Sydney'
     time.tzset()
 
     return dispatch(event)

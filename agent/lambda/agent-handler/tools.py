@@ -6,15 +6,19 @@ from urllib.parse import urlparse
 
 bedrock = boto3.client('bedrock-runtime', region_name=os.environ['AWS_REGION'])
 
+
 class Tools:
+    """
+    This class provides a Kendra search tool that can be used to answer questions by querying an Amazon Kendra index.
+    """
 
     def __init__(self) -> None:
         print("Initializing Tools")
         self.tools = [
             Tool(
-                name="AnyCompany",
+                name="GenAI",
                 func=self.kendra_search,
-                description="Use this tool to answer questions about AnyCompany.",
+                description="Use this tool to answer questions about your projects.",
             )
         ]
 
@@ -48,11 +52,11 @@ class Tools:
         kendra_response = kendra.query(
             IndexId=os.getenv('KENDRA_INDEX_ID'),
             QueryText=question,
-            PageNumber=1,
-            PageSize=5  # Limit to 5 results
+            PageNumber=1, # get the first page of result
+            PageSize=5  # Limit to 5 results per response page
         )
 
-        parsed_results = self.parse_kendra_response(kendra_response)
+        parsed_results = self.parse_kendra_response(kendra_response) # not change anything, just to print the source URI
 
         print(f"Amazon Kendra Query Item: {parsed_results}")
 
@@ -63,6 +67,7 @@ class Tools:
         """
         Generates an answer for the user based on the Kendra response.
         """
+        # TODO: CHANGE THE SYSTEM PROMPT
         prompt_data = f"""
         Human:
         Act as an internal chatbot assistant for a company named Enviroflares.
@@ -117,6 +122,7 @@ class Tools:
         answer = response_body['content'][0]['text']
 
         return answer
+
 
 # Pass the initialized retriever and llm to the Tools class constructor
 tools = Tools().tools

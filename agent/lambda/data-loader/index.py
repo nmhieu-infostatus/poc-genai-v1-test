@@ -12,15 +12,17 @@ REGION = os.environ.get('AWS_REGION')
 
 dynamodb = boto3.client('dynamodb', region_name=REGION)
 
+
 def handler(event, context):
     logger.info("Received event: %s", json.dumps(event))
 
     request_type = event.get('RequestType')
     if request_type == 'Create' or request_type == 'Update':
+        # load mock data into DynamoDB table: user_accounts_table_name
         try:
             with open('MOCK_DATA.json', 'r') as file:
                 claims_data = json.load(file)
-            
+
             items = []
             for claim in claims_data:
                 item = {}
@@ -40,13 +42,13 @@ def handler(event, context):
                     item[key] = result
 
                 items.append({'PutRequest': {'Item': item}})
-            
+
             response = dynamodb.batch_write_item(
                 RequestItems={
                     user_accounts_table_name: items
                 }
             )
-            
+
             logger.info("Batch write response: %s", json.dumps(response))
             cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData={})
         except Exception as e:

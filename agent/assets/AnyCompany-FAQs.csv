@@ -1,4 +1,0 @@
-_question,_answer,_source_uri
-Who can I ask about this chatbot?,"""Hieu Nguyen""",hieu.nguyen@infostatus.com.au
-How can I upload my documents?,"""You can upload your documents to a configured S3 bucket for this Proof-of-Concept project. Please contact Hieu Nguyen for further information.""",hieu.nguyen@infostatus.com.au
-What is Enviroflare?,"""Enviroflare is the solution organisations can use to get visibility of their sustainability footprint, and actions needed to be taken to fix issues and highlight where businesses are doing the right thing.""",placeholder: enviroflare.url
