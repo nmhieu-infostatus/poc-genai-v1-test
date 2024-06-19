@@ -76,6 +76,11 @@ export KENDRA_INDEX_ID=$(aws cloudformation describe-stacks \
     --region $AWS_REGION \
     --query 'Stacks[0].Outputs[?OutputKey==`KendraIndexID`].OutputValue' --output text)
 
+export KENDRA_S3DATASOURCE_ID=$(aws cloudformation describe-stacks \
+    --stack-name $STACK_NAME \
+    --region $AWS_REGION \
+    --query 'Stacks[0].Outputs[?OutputKey==`KendraS3DataSourceId`].OutputValue' --output text)
+
 export KENDRA_DATA_SOURCE_ROLE_ARN=$(aws cloudformation describe-stacks \
     --stack-name $STACK_NAME \
     --region $AWS_REGION \
@@ -95,7 +100,12 @@ aws kendra create-faq \
     --file-format "CSV_WITH_HEADER" \
     --region $AWS_REGION
 
+<<<<<<< Updated upstream
 aws kendra start-data-source-sync-job --id KENDRA_INDEX_ID --index-id $KENDRA_INDEX_ID --region $AWS_REGION
+=======
+# start sync kendra data source with document bucket
+aws kendra start-data-source-sync-job --id $KENDRA_S3DATASOURCE_ID --index-id $KENDRA_INDEX_ID --region $AWS_REGION
+>>>>>>> Stashed changes
 
 export AMPLIFY_APP_ID=$(aws cloudformation describe-stacks \
     --stack-name $STACK_NAME \
