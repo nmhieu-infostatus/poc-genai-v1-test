@@ -1,0 +1,10 @@
+{
+  "description": null,
+  "identifier": "RZV7CKWZFA",
+  "name": "GenAI-Agent",
+  "version": "DRAFT",
+  "dataPrivacy": {
+    "childDirected": false
+  },
+  "idleSessionTTLInSeconds": 900
+}
