@@ -3,7 +3,6 @@
 # chmod u+x create-stack.sh
 # source ./create-stack.sh
 
-#!/bin/bash
 export UNIQUE_IDENTIFIER=$(uuidgen | tr '[:upper:]' '[:lower:]' | tr -d '-' | cut -c 1-5)
 export S3_ARTIFACT_BUCKET_NAME=$STACK_NAME-$UNIQUE_IDENTIFIER
 export DATA_LOADER_S3_KEY="agent/lambda/data-loader/loader_deployment_package.zip"
@@ -39,8 +38,9 @@ export CFNRESPONSE_LAYER_ARN=$(aws lambda publish-layer-version \
     --query LayerVersionArn --output text)
 
 # create a secret in AWS Secrets Manager to store the GitHub Personal Access Token
-export GITHUB_TOKEN_SECRET_NAME=$(aws secretsmanager create-secret --name $STACK_NAME-git-pat \
---secret-string $GITHUB_PAT --region $AWS_REGION --query Name --output text)
+#export GITHUB_TOKEN_SECRET_NAME=$(aws secretsmanager create-secret --name $STACK_NAME-git-pat \
+#--secret-string $GITHUB_PAT --region $AWS_REGION --query Name --output text)
+export GITHUB_TOKEN_SECRET_NAME="poc-genai-v2o0-enviroflares-git-pat"
 
 # create cloudformation stack - pass parameters to the stack template
 # changed template file from GenAI-FSI-Agent.yml to GenAI-Agent.yml

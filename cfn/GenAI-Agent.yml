@@ -55,7 +55,7 @@ Metadata:
         default: cfnresponse-layer-arn
       GitHubTokenSecretName:
         default: your-github-token-secret-name
-      KnowlegeBucketName:
+      KnowledgeBucketName:
         default: your-knowledge-bucket-name
       AmplifyRepository:
         default: your-forked-repo-url
@@ -221,7 +221,7 @@ Resources:
   AgentHandlerFunction:
     Type: AWS::Lambda::Function
     Properties:
-      Description: Lambda handler for GenAI FSI Agent.
+      Description: Lambda handler for GenAI Agent.
       FunctionName: !Sub ${AWS::StackName}-GenAILexHandler
       Code:
         S3Bucket: !Ref S3ArtifactBucket
@@ -306,7 +306,7 @@ Resources:
   AmplifyApp:
     Type: AWS::Amplify::App
     Properties:
-      Name: !Sub ${AWS::StackName}-AnyCompany-Website
+      Name: !Sub ${AWS::StackName}-poc-genai-Website
       Repository: !Ref AmplifyRepository
       BuildSpec: |
         frontend:
@@ -322,7 +322,7 @@ Resources:
           cache:
             paths: []
       AccessToken: !Sub "{{resolve:secretsmanager:${GitHubTokenSecretName}}}"
-      Description: AnyCompany website
+      Description: POC-GenAI website
       IAMServiceRole: !GetAtt AmplifyRole.Arn
 
   AmplifyBranch:
@@ -411,8 +411,8 @@ Resources:
             Resource:
             - !Sub arn:aws:s3:::${S3ArtifactBucket}
             - !Sub arn:aws:s3:::${S3ArtifactBucket}/*
-            - !Sub arn:aws:s3:::${KnowlegeBucketName}
-            - !Sub arn:aws:s3:::${KnowlegeBucketName}/*
+            - !Sub arn:aws:s3:::${KnowlegdeBucketName}
+            - !Sub arn:aws:s3:::${KnowlegdeBucketName}/*
           - Effect: Allow
             Action:
             - 'kendra:PutPrincipalMapping'
@@ -464,13 +464,13 @@ Resources:
     DependsOn: LexBotRole
     Type: AWS::Lex::Bot
     Properties:
-        Name: !Sub ${AWS::StackName}-FSI-Agent
+        Name: !Sub ${AWS::StackName}-Agent
         BotFileS3Location: 
           S3Bucket: !Ref S3ArtifactBucket
           S3ObjectKey: !Ref LexBotS3Key
         DataPrivacy: 
           ChildDirected: false
-        Description: 'Financial Services Agent'
+        Description: 'GenAI Agent'
         IdleSessionTTLInSeconds: 900
         RoleArn: !GetAtt LexBotRole.Arn
 
