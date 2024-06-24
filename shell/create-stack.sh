@@ -4,18 +4,22 @@
 # source ./create-stack.sh
 
 export UNIQUE_IDENTIFIER=$(uuidgen | tr '[:upper:]' '[:lower:]' | tr -d '-' | cut -c 1-5)
-export S3_ARTIFACT_BUCKET_NAME=$STACK_NAME-$UNIQUE_IDENTIFIER
+
 export DATA_LOADER_S3_KEY="agent/lambda/data-loader/loader_deployment_package.zip"
 export LAMBDA_HANDLER_S3_KEY="agent/lambda/agent-handler/agent_deployment_package.zip"
 export LEX_BOT_S3_KEY="agent/bot/lex.zip"
 
 echo "STACK_NAME: $STACK_NAME"
-echo "S3_ARTIFACT_BUCKET_NAME: $S3_ARTIFACT_BUCKET_NAME"
 
-# create S3 bucket to store materials of the project
+# S3 artifact bucket name
+export S3_ARTIFACT_BUCKET_NAME=$STACK_NAME-$UNIQUE_IDENTIFIER
+echo "S3_ARTIFACT_BUCKET_NAME: $S3_ARTIFACT_BUCKET_NAME"
+# create S3 bucket to store materials of the project and copy the agent code (under ./agent directory) to the S3 bucket
 aws s3 mb s3://$S3_ARTIFACT_BUCKET_NAME --region $AWS_REGION
-# copy the agent code (under ./agent directory) to the S3 bucket
 aws s3 cp ../agent/ s3://$S3_ARTIFACT_BUCKET_NAME/agent/ --region $AWS_REGION --recursive --exclude ".DS_Store" --exclude "*/.DS_Store"
+
+# hardcoded to avoid waiting time to create bucket each time - for testing (after 1st deploy test)
+#export S3_ARTIFACT_BUCKET_NAME="poc-genai-v2-enviroflares-89040"
 
 # bedrock layer to read/write pdf files (RAG materials)
 export BEDROCK_LANGCHAIN_PDFRW_LAYER_ARN=$(aws lambda publish-layer-version \
@@ -27,6 +31,8 @@ export BEDROCK_LANGCHAIN_PDFRW_LAYER_ARN=$(aws lambda publish-layer-version \
     --region $AWS_REGION \
     --query LayerVersionArn --output text)
 
+echo "BEDROCK_LANGCHAIN_PDFRW_LAYER_ARN: $BEDROCK_LANGCHAIN_PDFRW_LAYER_ARN"
+
 # bedrock layer to configure responses from bedrock model (LLM)
 export CFNRESPONSE_LAYER_ARN=$(aws lambda publish-layer-version \
     --layer-name cfnresponse \
@@ -37,10 +43,15 @@ export CFNRESPONSE_LAYER_ARN=$(aws lambda publish-layer-version \
     --region $AWS_REGION \
     --query LayerVersionArn --output text)
 
+echo "CFNRESPONSE_LAYER_ARN: $CFNRESPONSE_LAYER_ARN"
+
 # create a secret in AWS Secrets Manager to store the GitHub Personal Access Token
 #export GITHUB_TOKEN_SECRET_NAME=$(aws secretsmanager create-secret --name $STACK_NAME-git-pat \
 #--secret-string $GITHUB_PAT --region $AWS_REGION --query Name --output text)
-export GITHUB_TOKEN_SECRET_NAME="poc-genai-v2o0-enviroflares-git-pat"
+
+# hardcoded to avoid creating duplicated secret
+export GITHUB_TOKEN_SECRET_NAME="poc-genai-v2o0-enviroflares-git-pat" # ACCOUNT: enviroflares
+#export GITHUB_TOKEN_SECRET_NAME="genai-poc-hieu-git-pat" # ACCOUNT: team-sandpit
 
 # create cloudformation stack - pass parameters to the stack template
 # changed template file from GenAI-FSI-Agent.yml to GenAI-Agent.yml
@@ -70,14 +81,28 @@ export LEX_BOT_ID=$(aws cloudformation describe-stacks \
     --region $AWS_REGION \
     --query 'Stacks[0].Outputs[?OutputKey==`LexBotID`].OutputValue' --output text)
 
+echo "LEX_BOT_ID: $LEX_BOT_ID"
+
 export LAMBDA_ARN=$(aws cloudformation describe-stacks \
     --stack-name $STACK_NAME \
     --region $AWS_REGION \
     --query 'Stacks[0].Outputs[?OutputKey==`LambdaARN`].OutputValue' --output text)
 
-aws lexv2-models update-bot-alias --bot-alias-id 'TSTALIASID' --bot-alias-name 'TestBotAlias' --bot-id $LEX_BOT_ID --bot-version 'DRAFT' --bot-alias-locale-settings "{\"en_US\":{\"enabled\":true,\"codeHookSpecification\":{\"lambdaCodeHook\":{\"codeHookInterfaceVersion\":\"1.0\",\"lambdaARN\":\"${LAMBDA_ARN}\"}}}}" --region $AWS_REGION
+echo "LAMBDA_ARN: $LAMBDA_ARN"
 
-aws lexv2-models build-bot-locale --bot-id $LEX_BOT_ID --bot-version "DRAFT" --locale-id "en_US" --region $AWS_REGION
+aws lexv2-models update-bot-alias \
+--bot-alias-id 'TSTALIASID' \
+--bot-alias-name 'TestBotAlias' \
+--bot-id $LEX_BOT_ID \
+--bot-version 'DRAFT' \
+--bot-alias-locale-settings "{\"en_US\":{\"enabled\":true,\"codeHookSpecification\":{\"lambdaCodeHook\":{\"codeHookInterfaceVersion\":\"1.0\",\"lambdaARN\":\"${LAMBDA_ARN}\"}}}}" \
+--region $AWS_REGION
+
+aws lexv2-models build-bot-locale \
+--bot-id $LEX_BOT_ID \
+--bot-version "DRAFT" \
+--locale-id "en_US" \
+--region $AWS_REGION
 
 # Kendra index and data source configure
 export KENDRA_INDEX_ID=$(aws cloudformation describe-stacks \
@@ -85,15 +110,21 @@ export KENDRA_INDEX_ID=$(aws cloudformation describe-stacks \
     --region $AWS_REGION \
     --query 'Stacks[0].Outputs[?OutputKey==`KendraIndexID`].OutputValue' --output text)
 
+echo "KENDRA_INDEX_ID: $KENDRA_INDEX_ID"
+
 export KENDRA_S3DATASOURCE_ID=$(aws cloudformation describe-stacks \
     --stack-name $STACK_NAME \
     --region $AWS_REGION \
-    --query 'Stacks[0].Outputs[?OutputKey==`KendraS3DataSourceId`].OutputValue' --output text)
+    --query 'Stacks[0].Outputs[?OutputKey==`KendraS3DataSourceID`].OutputValue' --output text)
+
+echo "KENDRA_S3DATASOURCE_ID: $KENDRA_S3DATASOURCE_ID"
 
 export KENDRA_DATA_SOURCE_ROLE_ARN=$(aws cloudformation describe-stacks \
     --stack-name $STACK_NAME \
     --region $AWS_REGION \
     --query 'Stacks[0].Outputs[?OutputKey==`KendraDataSourceRoleARN`].OutputValue' --output text)
+
+echo "KENDRA_DATA_SOURCE_ROLE_ARN: $KENDRA_DATA_SOURCE_ROLE_ARN"
 
 # create FAQ for the bot
 # changed: description from "AnyCompany S3 FAQ" to "GenAI S3 FAQ"
@@ -116,9 +147,13 @@ export AMPLIFY_APP_ID=$(aws cloudformation describe-stacks \
     --region $AWS_REGION \
     --query 'Stacks[0].Outputs[?OutputKey==`AmplifyAppID`].OutputValue' --output text)
 
+echo "AMPLIFY_APP_ID: $AMPLIFY_APP_ID"
+
 export AMPLIFY_BRANCH=$(aws cloudformation describe-stacks \
     --stack-name $STACK_NAME \
     --region $AWS_REGION \
     --query 'Stacks[0].Outputs[?OutputKey==`AmplifyBranch`].OutputValue' --output text)
+
+echo "AMPLIFY_BRANCH: $AMPLIFY_BRANCH"
 
 aws amplify start-job --app-id $AMPLIFY_APP_ID --branch-name $AMPLIFY_BRANCH --job-type 'RELEASE' --region $AWS_REGION
