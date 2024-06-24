@@ -28,20 +28,21 @@ def handler(event, context):
                 item = {}
                 for key, value in claim.items():
                     if value is None:
-                        result = {'S': ''}
+                        result = {"S": ''}
                     elif isinstance(value, str):
-                        result = {'S': value}
+                        result = {"S": value}
                     elif isinstance(value, (int, float)):
-                        result = {'N': str(value)}
+                        result = {"N": str(value)}
                     elif isinstance(value, dict):
                         nested_attributes = {}
                         for nested_key, nested_value in value.items():
                             nested_attributes[nested_key] = to_dynamodb_attribute(nested_value)
-                        result = {'M': nested_attributes}
+                        result = {"M": nested_attributes}
 
                     item[key] = result
+                    logger.info("Added Item: {}".format(item))
 
-                items.append({'PutRequest': {'Item': item}})
+                items.append({"PutRequest": {"Item": item}})
 
             response = dynamodb.batch_write_item(
                 RequestItems={

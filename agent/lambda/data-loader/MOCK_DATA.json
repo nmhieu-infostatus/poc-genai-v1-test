@@ -2,21 +2,21 @@
   {
     "userName": "Demo User",
     "pin": 1234,
-    "prefix": "Mr",
+    "prefix": "Mr"
   },
   {
     "userName": "Enviroflares",
     "pin": 1234,
-    "prefix": "Mrs",
+    "prefix": "Mrs"
   },
   {
     "userName": "Hieu Nguyen Minh",
     "pin": 2006,
-    "prefix": "Mr",
+    "prefix": "Mr"
   },
   {
     "userName": "Infostatus",
     "pin": 1111,
-    "prefix": "Mr",
+    "prefix": "Mr"
   }
 ]

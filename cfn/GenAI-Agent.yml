@@ -107,13 +107,13 @@ Resources:
       AttributeDefinitions:
       - AttributeName: userName
         AttributeType: S
-      - AttributeName: planName
-        AttributeType: S
+#      - AttributeName: planName
+#        AttributeType: S
       KeySchema:
       - AttributeName: userName
         KeyType: HASH
-      - AttributeName: planName
-        KeyType: RANGE
+#      - AttributeName: planName
+#        KeyType: RANGE
       ProvisionedThroughput:
         ReadCapacityUnits: '3'
         WriteCapacityUnits: '3'
@@ -127,13 +127,13 @@ Resources:
       AttributeDefinitions:
       - AttributeName: userName
         AttributeType: S
-      - AttributeName: planName
-        AttributeType: S
+#      - AttributeName: planName
+#        AttributeType: S
       KeySchema:
       - AttributeName: userName
         KeyType: HASH
-      - AttributeName: planName
-        KeyType: RANGE
+#      - AttributeName: planName
+#        KeyType: RANGE
       ProvisionedThroughput:
         ReadCapacityUnits: '3'
         WriteCapacityUnits: '3'
@@ -411,8 +411,8 @@ Resources:
             Resource:
             - !Sub arn:aws:s3:::${S3ArtifactBucket}
             - !Sub arn:aws:s3:::${S3ArtifactBucket}/*
-            - !Sub arn:aws:s3:::${KnowlegdeBucketName}
-            - !Sub arn:aws:s3:::${KnowlegdeBucketName}/*
+            - !Sub arn:aws:s3:::${KnowledgeBucketName}
+            - !Sub arn:aws:s3:::${KnowledgeBucketName}/*
           - Effect: Allow
             Action:
             - 'kendra:PutPrincipalMapping'
@@ -483,7 +483,7 @@ Outputs:
     Value: !GetAtt AmplifyBranch.BranchName
   KendraIndexID:
     Value: !GetAtt KendraIndex.Id
-  KendraS3DataSourceId:
+  KendraS3DataSourceID:
     Value: !GetAtt KendraS3DataSource.Id
   KendraDataSourceRoleARN:
     Value: !GetAtt KendraDataSourceRole.Arn
