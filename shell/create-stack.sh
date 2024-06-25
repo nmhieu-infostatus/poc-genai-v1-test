@@ -63,7 +63,7 @@ ParameterKey=S3ArtifactBucket,ParameterValue=$S3_ARTIFACT_BUCKET_NAME \
 ParameterKey=DataLoaderS3Key,ParameterValue=$DATA_LOADER_S3_KEY \
 ParameterKey=LambdaHandlerS3Key,ParameterValue=$LAMBDA_HANDLER_S3_KEY \
 ParameterKey=LexBotS3Key,ParameterValue=$LEX_BOT_S3_KEY \
-ParameterKey=BedrockLangChainPDFRWLayerArn,ParameterValue=$BEDROCK_LwANGCHAIN_PDFRW_LAYER_ARN \
+ParameterKey=BedrockLangChainPDFRWLayerArn,ParameterValue=$BEDROCK_LANGCHAIN_PDFRW_LAYER_ARN \
 ParameterKey=CfnresponseLayerArn,ParameterValue=$CFNRESPONSE_LAYER_ARN \
 ParameterKey=GitHubTokenSecretName,ParameterValue=$GITHUB_TOKEN_SECRET_NAME \
 ParameterKey=KnowledgeBucketName,ParameterValue=$KNOWLEDGE_BUCKET_NAME \

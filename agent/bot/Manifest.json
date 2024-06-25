@@ -1,7 +1,1 @@
-{
-  "metaData": {
-    "schemaVersion": "1",
-    "fileFormat": "LexJson",
-    "resourceType": "BOT"
-  }
-}
+{"metaData":{"schemaVersion":"1","fileFormat":"LexJson","resourceType":"BOT"}}

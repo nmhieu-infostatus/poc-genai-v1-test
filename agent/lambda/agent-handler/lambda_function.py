@@ -76,17 +76,18 @@ def elicit_intent(intent_request, session_attributes, message):
                 'content': message
             },
             # TODO: Remove this card or replace with new commands
+            # UPDATE: changed command to FAQ questions
             {
                 'contentType': 'ImageResponseCard',
                 'imageResponseCard': {
                     "buttons": [
                         {
-                            "text": "(to be removed)",
-                            "value": "Loan Application"
+                            "text": "About Enviroflares",
+                            "value": "What is Enviroflares?"
                         },
                         {
-                            "text": "(to be removed)",
-                            "value": "Loan Calculator"
+                            "text": "About this chatbot",
+                            "value": "Who can I ask about this chatbot?"
                         },
                         {
                             "text": "Ask GenAI",

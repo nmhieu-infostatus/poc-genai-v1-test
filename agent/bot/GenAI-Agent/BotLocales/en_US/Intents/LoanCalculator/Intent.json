@@ -1,67 +1,25 @@
 {
-  "name": "VerifyIdentity",
-  "identifier": "WWKKG8SUJX",
+  "name": "LoanCalculator",
+  "identifier": "4VPBPBHEKP",
   "description": null,
   "parentIntentSignature": null,
   "sampleUtterances": [
     {
-      "utterance": "kmConversationStarted"
+      "utterance": "Loan Calculator"
     }
   ],
   "intentConfirmationSetting": null,
-  "intentClosingSetting": {
-    "isActive": true,
-    "nextStep": {
-      "sessionAttributes": null,
-      "dialogAction": {
-        "type": "EndConversation",
-        "slotToElicit": null,
-        "suppressNextMessage": null
-      },
-      "intent": {
-        "name": null,
-        "slots": null
-      }
-    },
-    "closingResponse": {
-      "messageGroupsList": [
-        {
-          "message": {
-            "ssmlMessage": null,
-            "customPayload": null,
-            "plainTextMessage": null,
-            "imageResponseCard": {
-              "title": "Lex Bot",
-              "subtitle": "How else can I help?",
-              "imageUrl": "https://omni-lex-lambda-artifacts.s3.amazonaws.com/octank-logo.png",
-              "buttonsList": [
-                {
-                  "text": "About Enviroflares",
-                  "value": "What is Enviroflares?"
-                },
-                {
-                  "text": "About this Chatbot",
-                  "value": "Who can I ask about this chatbot?"
-                }
-              ]
-            }
-          },
-          "variations": null
-        }
-      ],
-      "allowInterrupt": true
-    }
-  },
+  "intentClosingSetting": null,
   "initialResponseSetting": {
     "conditional": null,
     "codeHook": {
       "isActive": true,
-      "enableCodeHookInvocation": false,
+      "enableCodeHookInvocation": true,
       "invocationLabel": null,
       "postCodeHookSpecification": {
         "failureResponse": null,
         "failureNextStep": {
-          "sessionAttributes": {},
+          "sessionAttributes": null,
           "dialogAction": {
             "type": "EndConversation",
             "slotToElicit": null,
@@ -69,7 +27,7 @@
           },
           "intent": {
             "name": null,
-            "slots": {}
+            "slots": null
           }
         },
         "failureConditional": null,
@@ -77,19 +35,19 @@
         "successNextStep": {
           "sessionAttributes": null,
           "dialogAction": {
-            "type": "ElicitSlot",
-            "slotToElicit": "UserName",
+            "type": "FulfillIntent",
+            "slotToElicit": null,
             "suppressNextMessage": null
           },
           "intent": {
             "name": null,
-            "slots": {}
+            "slots": null
           }
         },
         "successConditional": null,
         "timeoutResponse": null,
         "timeoutNextStep": {
-          "sessionAttributes": {},
+          "sessionAttributes": null,
           "dialogAction": {
             "type": "EndConversation",
             "slotToElicit": null,
@@ -97,14 +55,14 @@
           },
           "intent": {
             "name": null,
-            "slots": {}
+            "slots": null
           }
         },
         "timeoutConditional": null
       }
     },
     "nextStep": {
-      "sessionAttributes": {},
+      "sessionAttributes": null,
       "dialogAction": {
         "type": "InvokeDialogCodeHook",
         "slotToElicit": null,
@@ -112,7 +70,7 @@
       },
       "intent": {
         "name": null,
-        "slots": {}
+        "slots": null
       }
     },
     "initialResponse": null
@@ -131,7 +89,7 @@
       "failureNextStep": {
         "sessionAttributes": null,
         "dialogAction": {
-          "type": "CloseIntent",
+          "type": "EndConversation",
           "slotToElicit": null,
           "suppressNextMessage": null
         },
@@ -147,7 +105,7 @@
               "ssmlMessage": null,
               "customPayload": null,
               "plainTextMessage": {
-                "value": "Thank you! Your PIN has been verified. What else can we help you with today?"
+                "value": "This is where you would implement LoanCalculator intent fulfillment."
               },
               "imageResponseCard": null
             },
@@ -159,7 +117,7 @@
       "successNextStep": {
         "sessionAttributes": null,
         "dialogAction": {
-          "type": "CloseIntent",
+          "type": "EndConversation",
           "slotToElicit": null,
           "suppressNextMessage": null
         },
@@ -172,7 +130,7 @@
       "timeoutNextStep": {
         "sessionAttributes": null,
         "dialogAction": {
-          "type": "CloseIntent",
+          "type": "EndConversation",
           "slotToElicit": null,
           "suppressNextMessage": null
         },
@@ -185,14 +143,5 @@
     "fulfillmentUpdatesSpecification": null,
     "enabled": true
   },
-  "slotPriorities": [
-    {
-      "priority": 2,
-      "slotName": "Pin"
-    },
-    {
-      "priority": 1,
-      "slotName": "UserName"
-    }
-  ]
+  "slotPriorities": []
 }

@@ -78,7 +78,7 @@ class Tools:
         - If the answer can be found in the uploaded documents, provide the information directly from there.
         - If the information is not available in the context, use your general knowledge to answer the question.
         - If user's question is unclear or lacks sufficient information for a response, please seek further information from the user.
-        - Always ensure the information is up-to-date and accurate. Cite the sources whenever applicable.
+        - Always ensure the information is up-to-date and accurate. Cite the sources of information you use for your answer only, not all available sources.
         - Respond quickly and in a friendly manner.
         - Format your response for enhanced human readability.
 
