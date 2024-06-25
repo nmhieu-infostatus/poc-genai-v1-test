@@ -2,7 +2,6 @@ import os
 import json
 import boto3
 from langchain.agents.tools import Tool
-from urllib.parse import urlparse
 
 bedrock = boto3.client('bedrock-runtime', region_name=os.environ['AWS_REGION'])
 
@@ -16,9 +15,9 @@ class Tools:
         print("Initializing Tools")
         self.tools = [
             Tool(
-                name="GenAI",
+                name="RAG_Kendra_tool",
                 func=self.kendra_search,
-                description="Use this tool to answer questions about your projects.",
+                description="Use this tool to provide responses using information from your documents.",
             )
         ]
 
@@ -27,7 +26,6 @@ class Tools:
         Extracts the source URI from document attributes in Kendra response.
         """
         modified_response = kendra_response.copy()
-
         result_items = modified_response.get('ResultItems', [])
 
         for item in result_items:
@@ -41,33 +39,33 @@ class Tools:
                 print(f"Amazon Kendra Source URI: {source_uri}")
                 item['_source_uri'] = source_uri
 
-        return modified_response
-
-    def kendra_search(self, question):
+    def kendra_search(self, user_prompt):
         """
         Performs a Kendra search using the Query API.
         """
         kendra = boto3.client('kendra')
 
-        kendra_response = kendra.query(
+        kendra_search_result = kendra.query(
             IndexId=os.getenv('KENDRA_INDEX_ID'),
-            QueryText=question,
-            PageNumber=1, # get the first page of result
+            QueryText=user_prompt,
+            PageNumber=1, # Get the first page of result
             PageSize=5  # Limit to 5 results per response page
         )
 
-        parsed_results = self.parse_kendra_response(kendra_response) # not change anything, just to print the source URI
-
-        print(f"Amazon Kendra Query Item: {parsed_results}")
+        # Print Kendra source URI
+        self.parse_kendra_response(kendra_search_result)
+        # Print query result
+        print(f"Amazon Kendra Query Item: {kendra_search_result}")
 
         # passing in the original question, and various Kendra responses as context into the LLM
-        return self.invokeLLM(question, parsed_results)
+        return self.invokeLLM(user_prompt, kendra_search_result)
 
-    def invokeLLM(self, question, context):
+    def invokeLLM(self, user_prompt, context):
         """
-        Generates an answer for the user based on the Kendra response.
+        Generates an answer for the user using RAG with context from Kendra response.
         """
-        # TODO: CHANGE THE SYSTEM PROMPT
+        # Enrich the prompt with context before passing it to the LLM
+        # TODO: CHANGE THE SYSTEM PROMPT (DONE)
         prompt_data = f"""
         Human:
         Act as an internal chatbot assistant for a company named Enviroflares.
@@ -84,14 +82,15 @@ class Tools:
 
         Using the following context, answer the following question to the best of your ability. Do not include information that is not relevant to the question, and only provide information based on the context provided without making assumptions. 
 
-        Question: {question}
+        Question: {user_prompt}
 
         Context: {context}
 
         \n\nAssistant:
         """
 
-        # Formatting the prompt as a JSON string
+        # Formatting the prompt as JSON
+        # TODO: change some attributes of the json prompt to finetune
         json_prompt = json.dumps({
             "anthropic_version": "bedrock-2023-05-31",
             "max_tokens": 3500,
@@ -109,7 +108,7 @@ class Tools:
             ]
         })
 
-        # Invoking Claude3, passing in our prompt
+        # Invoking Claude3, passing in our JSON prompt
         response = bedrock.invoke_model(
             body=json_prompt,
             modelId="anthropic.claude-3-haiku-20240307-v1:0",

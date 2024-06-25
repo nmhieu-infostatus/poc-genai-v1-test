@@ -12,22 +12,28 @@ class GenAIAgent:
     """
 
     def __init__(self, llm, memory) -> None:
-        self.ai_prefix = "Assistant" # call the genai agent "Assistant"
-        self.human_prefix = "Human" # call the user of chatbot "Human"
+        # Set up GenAI Agent
+        # Call the genai agent "Assistant"
+        self.ai_prefix = "Assistant"
+        # Call the user of chatbot "Human"
+        self.human_prefix = "Human"
+        # Parsed in LLM and memory
         self.llm = llm
         self.memory = memory
-        self.tools_instance = Tools()  # Define tools_instance here
+        # RAG tool using Kendra search and indexing
+        self.tools_instance = Tools()
+        # Create the agent
         self.agent = self.create_agent()
 
     def create_agent(self):
 
-        # Initialize the agent with only the custom tool class from tools.py
-        genai_tool = Tool(name="GenAI", func=self.tools_instance.kendra_search,
-                               description="Use this tool to answer questions about your projects.")
+        # Initialize the agent RAG tool using Kendra defined in tools.py
+        RAG_Kendra_tool = Tool(name="RAG with Amazon Kendra", func=self.tools_instance.kendra_search,
+                               description="Use this tool to provide responses using information from your documents.")
 
         genai_agent = ConversationalAgent.from_llm_and_tools(
             llm=self.llm,
-            tools=[genai_tool],
+            tools=[RAG_Kendra_tool],
             ai_prefix=self.ai_prefix,
             human_prefix=self.human_prefix,
             verbose=True,
@@ -37,7 +43,7 @@ class GenAIAgent:
 
         agent_executor = AgentExecutor.from_agent_and_tools(
             agent=genai_agent,
-            tools=[genai_tool],
+            tools=[RAG_Kendra_tool],
             verbose=True,
             memory=self.memory,
             return_source_documents=True,
@@ -46,10 +52,11 @@ class GenAIAgent:
 
         return agent_executor
 
-    def run(self, input):
-        print("Running GenAI Agent with input: " + str(input))
+    def run(self, user_prompt):
+        print("Running GenAI Agent with input: " + str(user_prompt))
         try:
-            response = self.tools_instance.kendra_search(input)
+            # Parse the user prompt to perform RAG and generate a response
+            response = self.tools_instance.kendra_search(user_prompt)
         except ValueError as e:
             print(f"Error running agent: {e}")
             response = "Sorry! It appears we have encountered an issue."
